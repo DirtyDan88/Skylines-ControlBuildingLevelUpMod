@@ -1,0 +1,12 @@
+This mod enables you to control your city development by preventing buildings from upgrading to a certain level. Simple select a (growable) building of your choice and click on one of the level-up progressbars and the building won't exceed over this selected lock-level. If you select a lower level than the actual level of the building it will be bulldozed after a while.
+
+!!! Version 0.2: There was a bug in the first version of this mod. Some parts of the code were not initialized correctly, so basically the mod was working in background, but the user interface wasn't loaded.
+
+Note: The mod should work with existing savegames and not corrupt them, but it is not that much tested yet. If bugs appear, please report as detailed as possible. Built and tested under Windows 7 64-Bit, I have no information about other plattforms.
+This modification comes without any warranty, I take no responsibilty for loosing your savegame, your virginity, or whatever.
+
+Special thanks to user nlight for ModTools modification (http://steamcommunity.com/sharedfiles/filedetails/?id=409520576), it immensely reduces the try-and-error work and makes working with the API much less frustrating.
+
+Source code is available under GPLv2 at Github: https://github.com/DirtyDan88/Skylines-ControlBuildingLevelUpMod
+
+Have fun!
