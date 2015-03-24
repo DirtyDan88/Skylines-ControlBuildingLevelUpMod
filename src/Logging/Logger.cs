@@ -25,11 +25,12 @@ using ChirpLogger;
 namespace ControlBuildingLevelUpMod {
     public static class Logger {
         const string prefix = "ControlBuildingLevelUpMod: ";
+        public static bool inFile = false;
 
         public static void Info(String message) {
             try {
                 DebugOutputPanel.AddMessage(ColossalFramework.Plugins.PluginManager.MessageType.Message, prefix + message);
-                ChirpLog.Info(prefix + message);
+                if (inFile) ChirpLog.Info(prefix + message);
             } catch (Exception e) {
                 ChirpLog.Error("Error during Console.Log: " + e);
             }
@@ -38,7 +39,7 @@ namespace ControlBuildingLevelUpMod {
         public static void Error(String message) {
             try {
                 DebugOutputPanel.AddMessage(ColossalFramework.Plugins.PluginManager.MessageType.Error, prefix + message);
-                ChirpLog.Error(prefix + message);
+                if (inFile) ChirpLog.Error(prefix + message);
             } catch (Exception e) {
                 ChirpLog.Error("Error during Console.Error: " + e);
             }
@@ -47,7 +48,7 @@ namespace ControlBuildingLevelUpMod {
         public static void Warning(String message) {
             try {
                 DebugOutputPanel.AddMessage(ColossalFramework.Plugins.PluginManager.MessageType.Warning, prefix + message);
-                ChirpLog.Warning(prefix + message);
+                if (inFile) ChirpLog.Warning(prefix + message);
             } catch (Exception e) {
                 ChirpLog.Error("Error during Console.Warning: " + e);
             }

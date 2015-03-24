@@ -22,15 +22,18 @@ using ColossalFramework.UI;
 using ICities;
 using System;
 using System.Reflection;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ControlBuildingLevelUpMod {
     public class ThreadingExtension : ThreadingExtensionBase {
     
         //private float sumTimeDeltas = 0.0f;
-
-        private UIPanel panelBuildingInfo  = null;
-        private UIPanel panelLevelProgress = null;
+        
+        private      UIPanel panelBuildingInfo       = null;
+        private      UIPanel panelDistrictInfo       = null;
+        private      UIPanel panelBuildingProgress   = null;
+        private List<UIPanel> districtProgressPanels = new List<UIPanel>(4);
 
         public override void OnCreated(IThreading threading) {
             #if DEBUG 
@@ -43,96 +46,210 @@ namespace ControlBuildingLevelUpMod {
             Logger.Info("ThreadExtensionBase Released");
             #endif
 
-            if (this.panelLevelProgress != null) {
-                foreach (UIComponent progressBar in this.panelLevelProgress.components) {
+            if (this.panelBuildingProgress != null) {
+                foreach (UIComponent progressBar in this.panelBuildingProgress.components) {
                     UILabel progressBarLabel = progressBar.GetComponentInChildren<UILabel>();
                     progressBar.RemoveUIComponent(progressBarLabel);
-                    progressBar.eventClick -= this.ProgressBarClick;
-
-                    this.panelBuildingInfo = null;
-                    this.panelBuildingInfo = null;
-
-                    #if DEBUG 
-                    Logger.Info("Click event handler removed");
-                    #endif
+                    progressBar.eventClick -= this.BuildingProgressBarClick;
                 }
             }
+
+            foreach (UIPanel progressPanel in this.districtProgressPanels) {
+                if (progressPanel != null) {
+                    foreach (UIComponent progressBar in progressPanel.components) {
+                        UILabel progressBarLabel = progressBar.GetComponentInChildren<UILabel>();
+                        progressBar.RemoveUIComponent(progressBarLabel);
+                        progressBar.eventClick -= this.DistrictProgressBarClick;
+                    }
+                }
+            }
+
+            this.panelBuildingInfo = null;
+            this.panelDistrictInfo = null;
         }
 
         public override void OnUpdate(float realTimeDelta, float simulationTimeDelta) {
             /*
             sumTimeDeltas += realTimeDelta;
-            if (sumTimeDeltas > 0.1f) {
+            if (sumTimeDeltas > 1.0f) {
                 sumTimeDeltas = 0.0f;
 
             }
             */
 
-            if (this.panelLevelProgress == null || this.panelBuildingInfo == null) {
-                this.initView();
+            if (this.panelBuildingInfo == null || this.panelBuildingProgress == null) {
+                this.initBuildingView();
             } else {
                 if (this.panelBuildingInfo.isVisible) {
-                    this.updateView();
+                    this.updateBuildingView();
+                }
+            }
+            
+            bool progressPanelIsNull = false;
+            foreach (UIPanel progressPanel in this.districtProgressPanels) {
+                if (progressPanel == null) {
+                    progressPanelIsNull = true;
+                }
+            }
+
+            if (this.panelDistrictInfo == null || progressPanelIsNull) {
+                this.initDistrictView();
+            } else {
+                if (this.panelDistrictInfo.isVisible) {
+                    this.updateDistrictView();
                 }
             }
         }
 
-        private void initView() {
-            this.panelBuildingInfo  = UIView.Find<UIPanel>("(Library) ZonedBuildingWorldInfoPanel");
-            this.panelLevelProgress = UIView.Find<UIPanel>("LevelProgress");
+        private void initBuildingView() {
+            this.panelBuildingInfo     = UIView.Find<UIPanel>("(Library) ZonedBuildingWorldInfoPanel");
+            this.panelBuildingProgress = UIView.Find<UIPanel>("LevelProgress");
 
-            if (this.panelLevelProgress != null) {
-                foreach (UIComponent progressBar in this.panelLevelProgress.components) {
+            if (this.panelBuildingProgress != null) {
+                foreach (UIComponent progressBar in this.panelBuildingProgress.components) {
                     progressBar.AddUIComponent<UILabel>();
-                    progressBar.eventClick += this.ProgressBarClick;
-
-                    #if DEBUG
-                    Logger.Info("Click event handler added");
-                    #endif
+                    progressBar.eventClick += this.BuildingProgressBarClick;
                 }
             }
         }
 
-        private void updateView() {
-            Level buildingLockLevel = Buildings.getLockLevel(this.getSelectedBuildingID());
+        private void initDistrictView() {
+            this.panelDistrictInfo = UIView.Find<UIPanel>("(Library) DistrictWorldInfoPanel");
+            this.districtProgressPanels.Add(UIView.Find<UIPanel>("ResidentialLevelProgress"));
+            this.districtProgressPanels.Add(UIView.Find<UIPanel>("CommercialLevelProgress"));
+            this.districtProgressPanels.Add(UIView.Find<UIPanel>("IndustrialLevelProgress"));
+            this.districtProgressPanels.Add(UIView.Find<UIPanel>("OfficeLevelProgress"));
 
-            foreach (UIComponent progressBar in this.panelLevelProgress.components) {
+            /*
+            this.districtProgressPanels[Districts.RESIDENTIAL] = UIView.Find<UIPanel>("ResidentialLevelProgress");
+            this.districtProgressPanels[Districts.COMMERCIAL]  = UIView.Find<UIPanel>("CommercialLevelProgress");
+            this.districtProgressPanels[Districts.INDUSTRIAL]  = UIView.Find<UIPanel>("IndustrialLevelProgress");
+            this.districtProgressPanels[Districts.OFFICE]      = UIView.Find<UIPanel>("OfficeLevelProgress");
+            */
+
+            foreach (UIPanel progressPanel in this.districtProgressPanels) {
+                if (progressPanel != null) {
+                    foreach (UIComponent progressBar in progressPanel.components) {
+                        progressBar.AddUIComponent<UILabel>();
+                        progressBar.eventClick += this.DistrictProgressBarClick;
+                    }
+                }
+            }
+        }
+
+        private void updateBuildingView() {
+            ushort buildingID = this.getSelectedBuildingID();
+            Level buildingLockLevel = Buildings.getLockLevel(buildingID);
+
+            this.updateBuildingView(buildingID, buildingLockLevel);
+        }
+
+        private void updateBuildingView(ushort buildingID, Level buildingLockLevel) {
+            if (buildingLockLevel != Level.None) {
+                this.updateProgressPanel(this.panelBuildingProgress, buildingLockLevel, false);
+
+            } else {
+                Byte districtID  = Buildings.getDistrictID(buildingID);
+                int buildingType = Buildings.getBuildingType(buildingID);
+                Level districtLockLevel = Districts.getLockLevels(districtID)[buildingType];
+
+                if (districtLockLevel != Level.None) {
+                    this.updateProgressPanel(this.panelBuildingProgress, districtLockLevel, true);
+                } else {
+                    this.updateProgressPanel(this.panelBuildingProgress, Level.None, false);
+                }
+            }
+        }
+
+        private void updateDistrictView() {
+            Level[] districtLockLevels = Districts.getLockLevels(this.getSelectedDistrictID());
+            
+            int index = 0;
+            foreach (UIPanel progressPanel in this.districtProgressPanels) {
+                this.updateProgressPanel(progressPanel, districtLockLevels[index], true);
+                index++;
+            }
+        }
+
+        private void updateProgressPanel(UIComponent progressPanel, Level lockLevel, bool colored) {
+            foreach (UIComponent progressBar in progressPanel.components) {
                 Level progressBarLevel = this.getProgressBarLevel(progressBar);
                 UILabel progressBarLabel = progressBar.GetComponentInChildren<UILabel>();
 
                 float x = progressBar.width / 2 - progressBarLabel.width / 2;
                 float y = progressBar.height / 2 - progressBarLabel.height / 2;
                 progressBarLabel.relativePosition = new Vector3(x, y);
-                
+
                 progressBarLabel.text = "";
-                if (buildingLockLevel == progressBarLevel) {
-                    progressBarLabel.text = "#"; //"■";
+                if (lockLevel == progressBarLevel) {
+                    if (colored) {
+                        //progressBarLabel.textColor = new Color32(255, 255, 0, 255);
+                        progressBarLabel.textColor = new Color32(255, 0, 0, 255);
+                    } else {
+                        progressBarLabel.textColor = new Color32(255, 255, 255, 255);
+                    }
+                    progressBarLabel.text = "x"; //"#"; //"■";
                 }
             }
         }
 
-        private void ProgressBarClick(UIComponent progressBar, UIMouseEventParameter eventParam) {
+        private void BuildingProgressBarClick(UIComponent progressBar, UIMouseEventParameter eventParam) {
             ushort buildingID = this.getSelectedBuildingID();
             Level buildingLockLevel = Buildings.getLockLevel(buildingID);
             Level progressBarLevel  = this.getProgressBarLevel(progressBar);
 
             if (buildingLockLevel == Level.None) {
                 Buildings.add(buildingID, progressBarLevel);
+                this.updateBuildingView(buildingID, progressBarLevel);
                 #if DEBUG 
-                Logger.Info("lock level (" + buildingID + "): " + progressBarLevel);
+                Logger.Info("building lock level (" + buildingID + "): " + progressBarLevel);
                 #endif
 
             } else {
                 if (buildingLockLevel == progressBarLevel) {
                     Buildings.remove(buildingID);
+                    this.updateBuildingView(buildingID, Level.None);
                     #if DEBUG 
-                    Logger.Info("lock level (" + buildingID + "): none");
+                    Logger.Info("building lock level (" + buildingID + "): none");
                     #endif
 
                 } else {
                     Buildings.update(buildingID, progressBarLevel);
+                    this.updateBuildingView(buildingID, progressBarLevel);
                     #if DEBUG
-                    Logger.Info("lock level (" + buildingID + "): " + progressBarLevel);
+                    Logger.Info("building lock level (" + buildingID + "): " + progressBarLevel);
+                    #endif
+                }
+            }
+        }
+
+        private void DistrictProgressBarClick(UIComponent progressBar, UIMouseEventParameter eventParam) {
+            ushort districtID = this.getSelectedDistrictID();
+            int districtType = this.getProgressBarType(progressBar.parent);
+            UIComponent progressPanel = progressBar.parent;
+            Level[] districtLockLevels = Districts.getLockLevels(districtID);
+            Level progressBarLevel = this.getProgressBarLevel(progressBar);
+
+            if (districtLockLevels[districtType] == Level.None) {
+                Districts.add(districtID, progressBarLevel, districtType);
+                this.updateProgressPanel(progressPanel, progressBarLevel, true);
+                #if DEBUG
+                Logger.Info("district lock level (" + districtType + " | " + districtID + "): " + progressBarLevel);
+                #endif
+
+            } else {
+                if (districtLockLevels[districtType] == progressBarLevel) {
+                    Districts.update(districtID, Level.None, districtType);
+                    this.updateProgressPanel(progressPanel, Level.None, true);
+                    #if DEBUG
+                    Logger.Info("district lock level (" + districtType + " | " + districtID + "): " + Level.None);
+                    #endif
+
+                } else {
+                    Districts.update(districtID, progressBarLevel, districtType);
+                    this.updateProgressPanel(progressPanel, progressBarLevel, true);
+                    #if DEBUG
+                    Logger.Info("district lock level (" + districtType + " | " + districtID + "): " + progressBarLevel);
                     #endif
                 }
             }
@@ -149,9 +266,27 @@ namespace ControlBuildingLevelUpMod {
             }
         }
 
+        private int getProgressBarType(UIComponent progressPanel) {
+            switch (progressPanel.name) {
+                case "ResidentialLevelProgress": return Buildings.RESIDENTIAL;
+                case "CommercialLevelProgress":  return Buildings.COMMERCIAL;
+                case "IndustrialLevelProgress":  return Buildings.INDUSTRIAL;
+                case "OfficeLevelProgress":      return Buildings.OFFICE;
+                default: return -1;
+            }
+        }
+
         private ushort getSelectedBuildingID() {
             ZonedBuildingWorldInfoPanel panel = this.panelBuildingInfo.gameObject.
                                                 GetComponent<ZonedBuildingWorldInfoPanel>();
+            return Convert.ToUInt16(
+                    this.getProperty("Index", this.getField("m_InstanceID", panel))
+                    .ToString());
+        }
+
+        private ushort getSelectedDistrictID() {
+            DistrictWorldInfoPanel panel = this.panelDistrictInfo.gameObject.
+                                                GetComponent<DistrictWorldInfoPanel>();
             return Convert.ToUInt16(
                     this.getProperty("Index", this.getField("m_InstanceID", panel))
                     .ToString());

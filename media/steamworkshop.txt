@@ -1,6 +1,17 @@
+Control Building Level Up v0.4
+
 This mod enables you to control your city development by preventing buildings from upgrading to a certain level. Simple select a (growable) building of your choice and click on one of the level-up progressbars and the building won't exceed over this selected lock-level. If you select a lower level than the actual level of the building it will be bulldozed after a while.
 
-!!! Version 0.2: There was a bug in the first version of this mod. Some parts of the code were not initialized correctly, so basically the mod was working in background, but the user interface wasn't loaded.
+Version 0.4: Added district support. 
+* Click on the district to set a lock level for residential, commercial, industrial or office buildings.
+* Now we distinguish between district lock level (red symbol) and individual building lock level (white as so far). 
+* After setting a district level, which applies to every building of this type in the district, you can still set a specific lock level for each individual building, this level has always a higher priority than the district one. 
+* That means also, that already existing building lock levels will not be overwritten when setting a district level. 
+* When removing the building lock level, the district lock level is assigned to the building (if this is set for this building type).
+* Changed lock symbol from '#' to 'x'.
+* See new video!
+Version 0.3: Removed debug-infos
+Version 0.2: There was a bug in the first version of this mod. Some parts of the code were not initialized correctly, so basically the mod was working in background, but the user interface wasn't loaded.
 
 Note: The mod should work with existing savegames and not corrupt them, but it is not that much tested yet. If bugs appear, please report as detailed as possible. Built and tested under Windows 7 64-Bit, I have no information about other plattforms.
 This modification comes without any warranty, I take no responsibilty for loosing your savegame, your virginity, or whatever.

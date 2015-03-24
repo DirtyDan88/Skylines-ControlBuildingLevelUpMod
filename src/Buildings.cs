@@ -28,6 +28,11 @@ using System;
 
 namespace ControlBuildingLevelUpMod {
     public static class Buildings {
+        public const int RESIDENTIAL = 0;
+        public const int COMMERCIAL  = 1;
+        public const int INDUSTRIAL  = 2;
+        public const int OFFICE      = 3;
+
         /* 
         Since there are no concurrent collections in .NET 3.5 we have to use old-style locking 
         private static ConcurrentDictionary<ushort, Level> buildings = new ConcurrentDictionary<ushort, Level>();
@@ -39,9 +44,14 @@ namespace ControlBuildingLevelUpMod {
             if (data != null) {
                 BinaryFormatter bFormatter = new BinaryFormatter();
                 MemoryStream mStream       = new MemoryStream(data);
-                
-                buildings = null;
-                buildings = (Dictionary<ushort, Level>)bFormatter.Deserialize(mStream);
+                lock (lockBuilding) { 
+                    buildings = (Dictionary<ushort, Level>)bFormatter.Deserialize(mStream);
+                }
+
+            } else {
+                lock (lockBuilding) { 
+                    buildings = new Dictionary<ushort, Level>();
+                }
             }
         }
 
@@ -53,9 +63,9 @@ namespace ControlBuildingLevelUpMod {
             return mStream.ToArray();
         }
 
-        public static void add(ushort buildingID, Level progressBarLevel) {
+        public static void add(ushort buildingID, Level level) {
             lock (lockBuilding) { 
-                buildings.Add(buildingID, progressBarLevel);
+                buildings.Add(buildingID, level);
             }
         } 
 
@@ -65,9 +75,9 @@ namespace ControlBuildingLevelUpMod {
             }
         }
 
-        public static void update(ushort buildingID, Level progressBarLevel) {
+        public static void update(ushort buildingID, Level level) {
             lock (lockBuilding) { 
-                buildings[buildingID] = progressBarLevel;
+                buildings[buildingID] = level;
             }
         }
         
@@ -84,7 +94,29 @@ namespace ControlBuildingLevelUpMod {
 
             return buildingLockLevel;
         }
-        
+
+        public static Byte getDistrictID(ushort buildingID) {
+            BuildingManager buildingManager = Singleton<BuildingManager>.instance;
+            DistrictManager districtManager = Singleton<DistrictManager>.instance;
+            
+            return districtManager.GetDistrict(
+                   buildingManager.m_buildings.m_buffer[buildingID].m_position);
+        }
+
+        public static int getBuildingType(ushort buildingID) {
+            BuildingManager buildingManager = Singleton<BuildingManager>.instance;
+            Building building = buildingManager.m_buildings.m_buffer[buildingID];
+            ItemClass.Service buildingType = building.Info.m_class.m_service;
+
+            switch (buildingType) {
+                case ItemClass.Service.Residential: return RESIDENTIAL;
+                case ItemClass.Service.Commercial: return COMMERCIAL;
+                case ItemClass.Service.Industrial: return INDUSTRIAL;
+                case ItemClass.Service.Office: return OFFICE;
+                default: return -1;
+            }
+        }
+
         public static void dump() {
             int i = 0;
             foreach (KeyValuePair<ushort, Level> building in buildings) {

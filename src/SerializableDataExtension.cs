@@ -22,7 +22,8 @@ using System;
 
 namespace ControlBuildingLevelUpMod {
     public class SerializableDataExtension : ISerializableDataExtension {
-        private const String DATA_ID = "ControlBuildingLevelUpMod-buildingsLockLevel";
+        private const String BUILDINGS_DATA_ID = "ControlBuildingLevelUpMod-buildingsLockLevel";
+        private const String DISTRICT_DATA_ID  = "ControlBuildingLevelUpMod-districtsLockLevels";
         private ISerializableData sd;
 
         public void OnCreated(ISerializableData serializedData) {
@@ -46,12 +47,15 @@ namespace ControlBuildingLevelUpMod {
 
             try {
                 if (this.sd != null) {
-                    byte[] data = this.sd.LoadData(DATA_ID);
-                    Buildings.fromByteArray(data);
+                    byte[] building_data = this.sd.LoadData(BUILDINGS_DATA_ID);
+                    Buildings.fromByteArray(building_data);
+                    byte[] district_data = this.sd.LoadData(DISTRICT_DATA_ID);
+                    Districts.fromByteArray(district_data);
 
                     #if DEBUG
                     Logger.Info("Loading was successful");
                     Buildings.dump();
+                    Districts.dump();
                     #endif
 
                 } else {
@@ -69,14 +73,21 @@ namespace ControlBuildingLevelUpMod {
             #endif
 
             try {
-                if (this.sd != null) { 
-                    byte[] data = Buildings.toByteArray();
-                    if (data != null) {
-                        this.sd.SaveData(DATA_ID, data);
-                        #if DEBUG
-                        Logger.Info("Saving was successful");
-                        #endif
-                    } 
+                if (this.sd != null) {
+                    byte[] building_data = Buildings.toByteArray();
+                    if (building_data != null) {
+                        this.sd.SaveData(BUILDINGS_DATA_ID, building_data);
+                    }
+
+                    byte[] district_data = Districts.toByteArray();
+                    if (district_data != null) {
+                        this.sd.SaveData(DISTRICT_DATA_ID, district_data);
+                    }
+                    
+                    #if DEBUG
+                    Logger.Info("Saving was successful");
+                    #endif
+
                 } else {
                     Logger.Warning("Serializer is null, saving mod data not possible");
                 }

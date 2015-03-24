@@ -58,32 +58,51 @@ namespace ControlBuildingLevelUpMod {
             return levelUp;
         }
 
-        private Level controlLevelUp(Level targetLevel, Level currentLevel, ushort buildingID) {
+        private Level determineLockLevel(ushort buildingID) {
             Level buildingLockLevel = Buildings.getLockLevel(buildingID);
-
+            
             if (buildingLockLevel != Level.None) {
+                return buildingLockLevel;
+            } else {
+                Byte districtID = Buildings.getDistrictID(buildingID);
+                int buildingType = Buildings.getBuildingType(buildingID);
+
+                Level districtLockLevel = Districts.getLockLevels(districtID)[buildingType];
+
+                if (districtLockLevel != Level.None) {
+                    return districtLockLevel;
+                } else {
+                    return Level.None;
+                }
+            }
+        }
+
+        private Level controlLevelUp(Level targetLevel, Level currentLevel, ushort buildingID) {
+            Level lockLevel = this.determineLockLevel(buildingID);
+
+            if (lockLevel != Level.None) {
                 #if DEBUG
                 Logger.Info("OnCalculateResidentialLevelUp: building: " + buildingID +
-                                "\n   lock level is:    " + buildingLockLevel +
-                                "\n   current level is: " + currentLevel +
-                                "\n   target level is:  " + targetLevel);
+                                "\n    lock level is:    " + lockLevel +
+                                "\n    current level is: " + currentLevel +
+                                "\n    target level is:  " + targetLevel);
                 #endif
 
-                if (currentLevel > buildingLockLevel) {
+                if (currentLevel > lockLevel) {
                     #if DEBUG
                     Logger.Info("Building level too high: " + buildingID);
                     #endif
                     
                     this.bulldozeBuilding(buildingID);
-                    //TODO: b.m_flags = Building.Flags.Downgrading; ???
+                    //TODO: b.m_flags = Building.Flags.Downgrading; ?
                 }
 
-                if (targetLevel > buildingLockLevel && targetLevel > currentLevel) {
+                if (targetLevel > lockLevel && targetLevel > currentLevel) {
                     #if DEBUG
                     Logger.Info("Prevent building from leveling up: " + buildingID);
                     #endif
 
-                    return buildingLockLevel;
+                    return lockLevel;
                 }
             }
 
@@ -99,6 +118,7 @@ namespace ControlBuildingLevelUpMod {
                 buildingManager.ReleaseBuilding(buildingID);
                 Buildings.remove(buildingID);
 
+                /*
                 EffectInfo effect = buildingManager.m_properties.m_bulldozeEffect;
                 if (effect != null) {
                     InstanceID instance = new InstanceID();
@@ -115,6 +135,7 @@ namespace ControlBuildingLevelUpMod {
                     Singleton<EffectManager>.instance.DispatchEffect(effect, instance, spawnArea,
                         Vector3.zero, 0.0f, 1f, nullAudioGroup);
                 }
+                */
             } catch (Exception e) {
                 Logger.Error("Error during bulldozing building :" + e.Message);
             }

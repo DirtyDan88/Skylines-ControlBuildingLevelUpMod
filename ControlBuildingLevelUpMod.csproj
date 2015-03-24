@@ -51,10 +51,11 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="src\Buildings.cs" />
+    <Compile Include="src\Districts.cs" />
     <Compile Include="src\LevelUpExtension.cs" />
     <Compile Include="src\Logging\Chirp.cs" />
     <Compile Include="src\Logging\ChirpLogger.cs" />
-    <Compile Include="src\Logging\Console.cs" />
+    <Compile Include="src\Logging\Logger.cs" />
     <Compile Include="src\Mod.cs" />
     <Compile Include="src\SerializableDataExtension.cs" />
     <Compile Include="src\ThreadingExtension.cs" />
